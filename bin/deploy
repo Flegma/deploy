@@ -6,7 +6,9 @@
 #
 # https://github.com/visionmedia/deploy
 #
-
+set -e
+​
+DIST=dist_`date +%s | sha256sum | head -c 12`
 VERSION="0.6.0"
 CONFIG=./deploy.conf
 LOG=/tmp/deploy.log
@@ -36,6 +38,7 @@ usage() {
     setup                run remote setup commands (deprecated/default)
     symfony              run remote symfony setup commands
     wordpress            run remote wordpress setup commands
+    restore              run remote server account restore
     update               update deploy to the latest release
     revert [n]           revert to [n]th last deployment or 1
     config [key]         output config file or [key]
@@ -202,12 +205,12 @@ setup() {
 symfony() {
   local path=`config_get path`
   local repo=`config_get repo`
-  run "mkdir -p $path/{shared/{logs,pids},source}"
+  run "mkdir -p $path/{shared/{web,app},source}"
   test $? -eq 0 || abort setup paths failed
   log running setup
   log cloning $repo
   run "git clone $repo $path/source"
-  test $? -eq 0 || abort failed to clone
+  test $? -eq 0 || abort failed to clone - run deploy prod restore
   log creating deploy symlinks
   run "ln -sfn $path/source $path/current"
   test $? -eq 0 || abort symlink failed
@@ -218,6 +221,19 @@ symfony() {
   test $? -eq 0 || abort public_html symlink failed
   log downloading composer.phar
   run "cd $path/source && curl -sS https://getcomposer.org/installer | php"
+  test $? -eq 0 || abort composer not downloaded
+  log symlinking web/media folder to shared
+  run "mkdir $path/shared/web/media"
+  run "ln -sfn $path/shared/web/media $path/source/web"
+  test $? -eq 0 || web/media symlink not created
+  log symlinking .htaccess folder to shared
+  run "touch $path/shared/web/.htaccess"
+  run "ln -sfn $path/shared/web/.htaccess $path/source/web/.htaccess"
+  test $? -eq 0 || .htaccess symlink not created
+  log symlinking logs folder to shared
+  run "mkdir $path/shared/app/logs && rm -rf $path/source/app/logs"
+  run "ln -sfn $path/shared/app/logs $path/source/app/logs"
+  test $? -eq 0 || logs symlink not created
   log setup complete
 }
 #curl -sS https://getcomposer.org/installer | php
@@ -227,7 +243,7 @@ symfony() {
 wordpress() {
   local path=`config_get path`
   local repo=`config_get repo`
-  run "mkdir -p $path/{shared/{logs,pids},source}"
+  run "mkdir -p $path/{shared/{web,app},source}"
   test $? -eq 0 || abort setup paths failed
   log running setup
   log cloning $repo
@@ -288,10 +304,10 @@ deploy() {
     test $? -eq 0 || abort failed to determine latest tag
   fi
 
-  # reset HEAD
-  log resetting HEAD to $ref
-  run "cd $path/source && git reset --hard $ref"
-  test $? -eq 0 || abort git reset failed
+  # reset HEAD /mislim da ovo ne treba, da sacuva shared symlinkove
+  #log resetting HEAD to $ref
+  #run "cd $path/source && git reset --hard $ref"
+  #test $? -eq 0 || abort git reset failed
 
   # link current
   run "ln -sfn $path/source $path/current"
