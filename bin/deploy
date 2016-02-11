@@ -36,7 +36,6 @@ usage() {
     setup                run remote setup commands (deprecated/default)
     symfony              run remote symfony setup commands
     wordpress            run remote wordpress setup commands
-    restore              run remote server account restore
     update               update deploy to the latest release
     revert [n]           revert to [n]th last deployment or 1
     config [key]         output config file or [key]
@@ -217,9 +216,11 @@ symfony() {
   log creating public_html symlink
   run "ln -sfn $path/current/web $path/public_html"
   test $? -eq 0 || abort public_html symlink failed
+  log downloading composer.phar
+  run "cd $path/source && curl -sS https://getcomposer.org/installer | php"
   log setup complete
 }
-
+#curl -sS https://getcomposer.org/installer | php
 #
 # Setup Wordpress.
 #
@@ -256,6 +257,8 @@ restore() {
   run "rm -rf $path/source"
   log removing shared
   run "rm -rf $path/shared"
+  log removing .deploys file
+  run "rm -f $path/.deploys"
   log restore complete
 }
 
