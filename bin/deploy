@@ -7,8 +7,8 @@
 # https://github.com/visionmedia/deploy
 #
 
-DIST="date +%s | sha256sum | head -c 12"
-NOW=$(date +"%Y-%m-%d-%S")
+NOW=$(date +"%d-%m-%Y-%k-%M-%S")
+NUMBER=$(ls -l | grep ^d | wc -l)
 VERSION="0.6.0"
 CONFIG=./deploy.conf
 LOG=/tmp/deploy.log
@@ -206,6 +206,7 @@ setup() {
 symfony() {
   local path=`config_get path`
   local repo=`config_get repo`
+  local broj=`config_get broj`
   local unique=$NOW
   run "mkdir -p $path/{shared/{web,app},source}"
   test $? -eq 0 || abort setup paths failed
@@ -214,7 +215,7 @@ symfony() {
   run "git clone $repo $path/source/$unique"
   test $? -eq 0 || abort failed to clone - run deploy prod restore
   log downloading composer.phar
-  run "cd $path/source/$unique && curl -sS https://getcomposer.org/installer | php"
+  run "cd $path/source/$unique && curl -sS https://getcomposer.org/installer | php && php composer.phar install"
   test $? -eq 0 || abort composer not downloaded
   log symlinking web/media folder to shared
   run "mkdir $path/shared/web/media && rm -rf $path/source/$unique/web/media"
@@ -259,17 +260,9 @@ symfony() {
   test $? -eq 0 || abort deploy log append failed
 
   # link current
-  #run "ln -sfn $path/source/$unique $path/current"
-  #test $? -eq 0 || abort symlink failed
-  log removing public_html folder
-  run "rm -rf $path/public_html"
-  log creating public_html symlink
-  run "ln -sfn $path/current/web $path/public_html"
-  test $? -eq 0 || abort public_html symlink failed
-  log creating deploy symlinks
   run "ln -sfn $path/source/$unique $path/current"
   test $? -eq 0 || abort symlink failed
-
+  
   hook post-deploy || abort post-deploy hook failed
 
   if test $TEST -eq 1; then
@@ -284,6 +277,15 @@ symfony() {
 
   # done
   log successfully deployed $ref
+  #log removing public_html folder
+  #run "rm -rf $path/public_html"
+  #log creating deploy symlinks
+  #run "ln -sfn $path/source/$unique $path/current"
+  #test $? -eq 0 || abort symlink failed
+  log creating public_html symlink
+  run "ln -sfn $path/current/web $path/public_html"
+  test $? -eq 0 || abort public_html symlink failed
+  run "ls -d -1tr $path/source/* | head -n -$broj | xargs -d '\n' rm -rf"
 }
 #curl -sS https://getcomposer.org/installer | php
 #
