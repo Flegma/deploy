@@ -2,9 +2,9 @@
 
 #
 # deploy(1) - Minimalistic shell script to deploy Git repositories.
-# Released under the MIT License. Edit by Leonardo Bujas.
+# Released under the MIT License.
 #
-# Fork of: https://github.com/visionmedia/deploy
+# https://github.com/visionmedia/deploy
 #
 
 VERSION="0.6.0"
@@ -33,7 +33,10 @@ usage() {
 
   Commands:
 
-    setup                run remote setup commands
+    setup                run remote setup commands (deprecated/default)
+    symfony              run remote symfony setup commands
+    wordpress            run remote wordpress setup commands
+    restore              run remote server account restore
     update               update deploy to the latest release
     revert [n]           revert to [n]th last deployment or 1
     config [key]         output config file or [key]
@@ -195,26 +198,65 @@ setup() {
 }
 
 #
-# Setup symlink symfony.
+# Setup Symfony.
 #
-symlink() {
+symfony() {
   local path=`config_get path`
+  local repo=`config_get repo`
+  run "mkdir -p $path/{shared/{logs,pids},source}"
+  test $? -eq 0 || abort setup paths failed
+  log running setup
+  log cloning $repo
+  run "git clone $repo $path/source"
+  test $? -eq 0 || abort failed to clone
+  log creating deploy symlinks
+  run "ln -sfn $path/source $path/current"
+  test $? -eq 0 || abort symlink failed
+  log removing public_html folder
   run "rm -rf $path/public_html"
-  log running symlink setup
+  log creating public_html symlink
   run "ln -sfn $path/current/web $path/public_html"
-  log symlink setup complete
+  test $? -eq 0 || abort public_html symlink failed
+  log setup complete
 }
 
 #
-# Setup wordpress symlink.
+# Setup Wordpress.
 #
 wordpress() {
   local path=`config_get path`
-  run "rm -rf -p $path/public_html"
-  log running symlink setup
-  run "ln -sfn $path/current $path/public_html"
+  local repo=`config_get repo`
+  run "mkdir -p $path/{shared/{logs,pids},source}"
+  test $? -eq 0 || abort setup paths failed
+  log running setup
+  log cloning $repo
+  run "git clone $repo $path/source"
+  test $? -eq 0 || abort failed to clone
+  log creating deploy symlinks
+  run "ln -sfn $path/source $path/current"
   test $? -eq 0 || abort symlink failed
-  log symlink setup complete
+  log removing public_html folder
+  run "rm -rf $path/public_html"
+  log creating public_html symlink
+  run "ln -sfn $path/current $path/public_html"
+  test $? -eq 0 || abort public_html symlink failed
+  log setup complete
+}
+
+#
+# Reset user account to defaults.
+#
+restore() {
+  local path=`config_get path`
+  log removing public_html
+  run "rm -f $path/public_html"
+  log removing current
+  run "rm -f $path/current"
+  log removing source
+  run "rm -rf $path/source"
+  log removing shared
+  run "rm -rf $path/shared"
+  log restore complete
 }
 
 #
@@ -376,8 +418,9 @@ while test $# -ne 0; do
     prev|previous) require_env; nth_deploy_commit 2; exit ;;
     revert) require_env; revert_to ${1-1}; exit ;;
     setup) require_env; setup $@; exit ;;
-    symlink) require_env; symlink $@; exit ;;
+    symfony) require_env; symfony $@; exit ;;
     wordpress) require_env; wordpress $@; exit ;;
+    restore) require_env; restore $@; exit ;;
     list) require_env; list_deploys; exit ;;
     update) update; exit ;;
     config) config $@; exit ;;
