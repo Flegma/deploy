@@ -2,9 +2,9 @@
 
 #
 # deploy(1) - Minimalistic shell script to deploy Git repositories.
-# Released under the MIT License.
+# Released under the MIT License. Edit by Leonardo Bujas.
 #
-# https://github.com/visionmedia/deploy
+# Fork of: https://github.com/visionmedia/deploy
 #
 
 VERSION="0.6.0"
@@ -195,6 +195,29 @@ setup() {
 }
 
 #
+# Setup symlink symfony.
+#
+symlink() {
+  local path=`config_get path`
+  run "rm -rf $path/public_html"
+  log running symlink setup
+  run "ln -sfn $path/current/web $path/public_html"
+  log symlink setup complete
+}
+
+#
+# Setup wordpress symlink.
+#
+wordpress() {
+  local path=`config_get path`
+  run "rm -rf -p $path/public_html"
+  log running symlink setup
+  run "ln -sfn $path/current $path/public_html"
+  test $? -eq 0 || abort symlink failed
+  log symlink setup complete
+}
+
+#
 # Deploy [ref].
 #
 
@@ -353,6 +376,8 @@ while test $# -ne 0; do
     prev|previous) require_env; nth_deploy_commit 2; exit ;;
     revert) require_env; revert_to ${1-1}; exit ;;
     setup) require_env; setup $@; exit ;;
+    symlink) require_env; symlink $@; exit ;;
+    wordpress) require_env; wordpress $@; exit ;;
     list) require_env; list_deploys; exit ;;
     update) update; exit ;;
     config) config $@; exit ;;
@@ -371,3 +396,4 @@ check_for_local_changes
 
 # deploy
 deploy "${REF:-`config_get ref`}"
+
