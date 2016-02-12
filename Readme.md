@@ -117,10 +117,14 @@
 ### pre-deploy
 
       pre-deploy ./bin/something
+      
+### mid-deploy
+
+      mid-deploy ./bin/something_else
 
 ### post-deploy
 
-      post-deploy ./bin/restart
+      post-deploy ./bin/finish
 
 ### test
 
