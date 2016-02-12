@@ -14,26 +14,29 @@
 
       Usage: deploy [options] <env> [command]
 
-      Options:
+  Options:
 
-        -C, --chdir <path>   change the working directory to <path>
-        -c, --config <path>  set config path. defaults to ./deploy.conf
-        -T, --no-tests       ignore test hook
-        -V, --version        output program version
-        -h, --help           output help information
+    -C, --chdir <path>   change the working directory to <path>
+    -c, --config <path>  set config path. defaults to ./deploy.conf
+    -T, --no-tests       ignore test hook
+    -V, --version        output program version
+    -h, --help           output help information
 
-      Commands:
+  Commands:
 
-        setup                run remote setup commands
-        update               update deploy to the latest release
-        revert [n]           revert to [n]th last deployment or 1
-        config [key]         output config file or [key]
-        curr[ent]            output current release commit
-        prev[ious]           output previous release commit
-        exec|run <cmd>       execute the given <cmd>
-        console              open an ssh session to the host
-        list                 list previous deploy commits
-        [ref]                deploy to [ref], the 'ref' setting, or latest tag
+    setup                run remote setup commands
+    symfony              run remote symfony setup commands
+    wordpress            run remote wordpress setup commands
+    restore              run remote server account restore
+    update               update deploy to the latest release
+    revert [n]           revert to [n]th last deployment or 1
+    config [key]         output config file or [key]
+    curr[ent]            output current release commit
+    prev[ious]           output previous release commit
+    exec|run <cmd>       execute the given <cmd>
+    console              open an ssh session to the host
+    list                 list previous deploy commits
+    [ref]                deploy to [ref], the 'ref' setting, or latest tag
 
 ## Configuration
 
