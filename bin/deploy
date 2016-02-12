@@ -35,7 +35,7 @@ usage() {
 
   Commands:
 
-    setup                run remote setup commands (deprecated/default)
+    setup                run remote setup commands
     symfony              run remote symfony setup commands
     wordpress            run remote wordpress setup commands
     restore              run remote server account restore
@@ -188,16 +188,25 @@ hook() {
 
 setup() {
   local path=`config_get path`
-  local repo=`config_get repo`
-  #local unique=$NOW
-  run "mkdir -p $path/{shared/{logs,pids},source}"
+  log running setup (creating shared/source directories)
+  run "mkdir -p $path/{shared/{app,web},source}"
   test $? -eq 0 || abort setup paths failed
-  log running setup
-  #log cloning $repo
-  #run "git clone $repo $path/source/$unique"
-  #test $? -eq 0 || abort failed to clone
+  log done creating shared/source directories
+  log symlinking source to current folder
   run "ln -sfn $path/source $path/current"
-  test $? -eq 0 || abort symlink failed
+  log done
+  log making shared web/media folder in $path
+  run "mkdir $path/shared/web/media"
+  test $? -eq 0 || web/media symlink not created
+  log done
+  log making shared .htaccess file in $path
+  run "touch $path/shared/web/.htaccess"
+  test $? -eq 0 || .htaccess symlink not created
+  log done
+  log making shared app/logs folder in $path
+  run "mkdir $path/shared/app/logs"
+  test $? -eq 0 || logs symlink not created
+  log done
   log setup complete
 }
 
@@ -205,41 +214,39 @@ setup() {
 # Setup Symfony.
 #
 symfony() {
-  local path=`config_get path`
-  local repo=`config_get repo`
-  local broj=`config_get broj`
-  local unique=$NOW
-  run "mkdir -p $path/{shared/{web,app},source}"
-  test $? -eq 0 || abort setup paths failed
-  log running setup
+  local path=`config_get path` #get deploy path
+  local repo=`config_get repo` #get repository
+  local broj=`config_get broj` #get number of releases we want to save in source folder
+  local unique=$NOW #get unique name for release folder
+  local ref=$1 #get 
   log cloning $repo
-  run "git clone $repo $path/source/$unique"
+  run "git clone $repo $path/source/$unique" #cloning repo to unique release folder
   test $? -eq 0 || abort failed to clone - run deploy prod restore
   log downloading composer.phar
-  run "cd $path/source/$unique && curl -sS https://getcomposer.org/installer | php && php composer.phar install"
+  run "cd $path/source/$unique && curl -sS https://getcomposer.org/installer | php && php composer.phar install" #download composer.phar to unique release folder
   test $? -eq 0 || abort composer not downloaded
   log symlinking web/media folder to shared
-  run "mkdir $path/shared/web/media && rm -rf $path/source/$unique/web/media"
-  run "ln -sfn $path/shared/web/media $path/source/$unique/web/media"
+  run "rm -rf $path/source/$unique/web/media" #remove symlink if exists, which it shouldnt
+  run "ln -sfn $path/shared/web/media $path/source/$unique/web/media" #make symlink to shared folder
   test $? -eq 0 || web/media symlink not created
+  log done
   log symlinking .htaccess folder to shared
-  run "touch $path/shared/web/.htaccess"
-  run "ln -sfn $path/shared/web/.htaccess $path/source/$unique/web/.htaccess"
+  run "ln -sfn $path/shared/web/.htaccess $path/source/$unique/web/.htaccess" #make symlink to shared folder
   test $? -eq 0 || .htaccess symlink not created
+  log done
   log symlinking logs folder to shared
-  run "mkdir $path/shared/app/logs && rm -rf $path/source/$unique/app/logs"
-  run "ln -sfn $path/shared/app/logs $path/source/$unique/app/logs"
+  run "rm -rf $path/source/$unique/app/logs" #remove symlink if exists, which it shouldnt
+  run "ln -sfn $path/shared/app/logs $path/source/$unique/app/logs" #make symlink to shared folder
   test $? -eq 0 || logs symlink not created
+  log done
   log deploying
-
   hook pre-deploy || abort pre-deploy hook failed
-
-  # fetch source
+  log done running pre-deploy scripts
   log fetching updates
-  run "cd $path/source/$unique && git fetch --all"
+  run "cd $path/source/$unique && git fetch --all" #fetch repo into unique release folder
   test $? -eq 0 || abort fetch failed
-
-  # latest tag
+  log done fetching updates
+  # fetch latest tag
   if test -z "$ref"; then
     log fetching latest tag
     ref=`run "cd $path/source/$unique && git for-each-ref refs/tags \
@@ -248,21 +255,19 @@ symfony() {
       --count=1 | cut -d '/' -f 3"`
     test $? -eq 0 || abort failed to determine latest tag
   fi
+  log done fetching latest tag
 
   # reset HEAD /mislim da ovo ne treba, da sacuva shared symlinkove
   #log resetting HEAD to $ref
   #run "cd $path/source && git reset --hard $ref"
   #test $? -eq 0 || abort git reset failed
 
-  # deploy log
+  #log deploys to .deploys file so we can now what has been deployed
   run "cd $path/source/$unique && \
       echo \`git rev-parse --short HEAD\` \
       >> $path/.deploys"
   test $? -eq 0 || abort deploy log append failed
-
-  # link current
-  #run "ln -sfn $path/source/$unique $path/current"
-  #test $? -eq 0 || abort symlink failed
+  log done logging deploy
   
   hook mid-deploy || abort mid-deploy hook failed
 
@@ -275,21 +280,21 @@ symfony() {
   else
     log ignoring tests
   fi
- 
-  #log removing public_html folder
-  #run "rm -rf $path/public_html"
+  log done running mid-deploy scripts
   log creating deploy symlinks
-  run "ln -sfn $path/source/$unique $path/current"
+  run "ln -sfn $path/source/$unique $path/current" #symlink unique release folder name to current
   test $? -eq 0 || abort symlink failed
+  log done creating current symlink
   log creating public_html symlink
-  run "ln -sfn $path/current/web $path/public_html"
+  run "ln -sfn $path/current/web $path/public_html" #symlink current/web folder to public_html
   test $? -eq 0 || abort public_html symlink failed
+  log done symlinking current/web to public_html
   log removing all but latest $broj deploys
-  run "ls -d -1tr $path/source/* | head -n -$broj | xargs -d '\n' rm -rf"
-   # done
+  run "ls -d -1tr $path/source/* | head -n -$broj | xargs -d '\n' rm -rf" #remove all but $broj number of deploys
+  log done removing all but latest $broj deploys
   hook post-deploy || abort post-deploy hook failed
+  log done running post-deploy scripts
   log successfully deployed $ref
-
 }
 
 #
@@ -322,14 +327,19 @@ restore() {
   local path=`config_get path`
   log removing public_html
   run "rm -f $path/public_html"
+  log done
   log removing current
   run "rm -f $path/current"
+  log done
   log removing source
   run "rm -rf $path/source"
+  log done
   log removing shared
   run "rm -rf $path/shared"
+  log done
   log removing .deploys file
   run "rm -f $path/.deploys"
+  log done
   log restore complete
 }
 
@@ -396,7 +406,7 @@ deploy() {
 
 current_commit() {
   local path=`config_get path`
-  run "cd $path/source && \
+  run "cd $path/current && \
       git rev-parse --short HEAD"
 }
 
