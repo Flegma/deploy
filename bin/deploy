@@ -310,23 +310,6 @@ wordpress() {
   log cloning $repo
   run "git clone $repo $path/source/$unique" #cloning repo to unique release folder
   test $? -eq 0 || abort failed to clone - run deploy prod restore
-  #not needed for wordpress deploy
-  #log downloading composer.phar
-  #run "cd $path/source/$unique && curl -sS https://getcomposer.org/installer | php && php composer.phar install" #download composer.phar to unique release folder
-  #test $? -eq 0 || abort composer not downloaded
-  #log symlinking web/media folder to shared
-  #run "rm -rf $path/source/$unique/web/media" #remove symlink if exists, which it shouldnt
-  #run "ln -sfn $path/shared/web/media $path/source/$unique/web/media" #make symlink to shared folder
-  #test $? -eq 0 || web/media symlink not created
-  #log done
-  #log symlinking .htaccess folder to shared
-  #run "ln -sfn $path/shared/web/.htaccess $path/source/$unique/web/.htaccess" #make symlink to shared folder
-  #test $? -eq 0 || .htaccess symlink not created
-  #log done
-  #log symlinking logs folder to shared
-  #run "rm -rf $path/source/$unique/app/logs" #remove symlink if exists, which it shouldnt
-  #run "ln -sfn $path/shared/app/logs $path/source/$unique/app/logs" #make symlink to shared folder
-  #test $? -eq 0 || logs symlink not created
   log done
   log deploying
   hook pre-deploy || abort pre-deploy hook failed
@@ -385,30 +368,6 @@ wordpress() {
   log done running post-deploy scripts
   log successfully deployed $ref
 }
-
-
-#
-# Setup Wordpress.
-#
-#wordpresssss() {
-##  local path=`config_get path`
-#  local repo=`config_get repo`
-#  run "mkdir -p $path/{shared/{web,app},source}"
-#  test $? -eq 0 || abort setup paths failed
-#  log running setup
-#  log cloning $repo
-#  run "git clone $repo $path/source"
-#  test $? -eq 0 || abort failed to clone
-#  log creating deploy symlinks
-#  run "ln -sfn $path/source $path/current"
-#  test $? -eq 0 || abort symlink failed
-#  log removing public_html folder
-#  run "rm -rf $path/public_html"
-#  log creating public_html symlink
-#  run "ln -sfn $path/current $path/public_html"
-#  test $? -eq 0 || abort public_html symlink failed
-#  log setup complete
-#}
 
 #
 # Reset user account to defaults.
