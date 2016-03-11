@@ -9,13 +9,13 @@
 
 NOW=$(date +"%d-%m-%Y-%H-%M-%S")
 NUMBER=$(ls -l | grep ^d | wc -l)
-VERSION="0.6.1"
+VERSION="0.7.1"
 HOME="$HOME/"
 CONFIG=./deploy.conf
 LOG=/tmp/deploy.log
 TEST=1
-REF=
-ENV=
+#REF=
+#ENV=
 
 #
 # Output usage information.
