@@ -9,13 +9,13 @@
 
 NOW=$(date +"%d-%m-%Y-%H-%M-%S")
 NUMBER=$(ls -l | grep ^d | wc -l)
-VERSION="0.7.1"
+VERSION="1.0.0"
 HOME="$HOME/"
 CONFIG=./deploy.conf
 LOG=/tmp/deploy.log
 TEST=1
-#REF=
-#ENV=
+REF=
+ENV=
 
 #
 # Output usage information.
@@ -541,15 +541,18 @@ check_for_local_changes() {
 #
 
 update() {
-  log "updating deploy script"
-  rm -fr /tmp/deploy
-  git clone git@github.com:Flegma/deploy.git \
-    --depth 0 \
-    /tmp/deploy \
-    &> /tmp/deploy.log \
-  && cd /tmp/deploy \
-  && make install \
-  && log "updated $VERSION -> `./bin/deploy --version`"
+  log updating deploy script
+  run "rm -fr /tmp/deploy && git clone git:github.com:Flegma/deploy.git /tmp/deploy && cd /tmp/deploy && make install"
+  log "updated $VERSION -> `./bin/deploy --version`"
+  #log "updating deploy script"
+  #rm -fr /tmp/deploy
+  #git clone git:github.com:Flegma/deploy.git \
+  #  --depth 0 \
+  #  /tmp/deploy \
+  #  &> /tmp/deploy.log \
+  #&& cd /tmp/deploy \
+  #&& make install \
+  #&& log "updated $VERSION -> `./bin/deploy --version`"
 }
 
 # parse argv
