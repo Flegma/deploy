@@ -1,7 +1,7 @@
 
 # deploy
 
-  Minimalistic deployment shell script.
+  Minimalistic deployment shell script based on [Visionmedia](https://github.com/visionmedia/deploy/) deploy script.
 
 ## Installation
 
