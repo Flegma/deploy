@@ -9,7 +9,7 @@
 
 NOW=$(date +"%d-%m-%Y-%H-%M-%S")
 NUMBER=$(ls -l | grep ^d | wc -l)
-VERSION="0.6.0"
+VERSION="0.6.1"
 CONFIG=./deploy.conf
 LOG=/tmp/deploy.log
 TEST=1
@@ -183,12 +183,12 @@ hook() {
 }
 
 #
-# Run setup.
+# Run web folders setup.
 #
 
 setup() {
   local path=`config_get path`
-  log running setup -> creating shared/source directories
+  log running setup - creating shared/source directories
   run "mkdir -p $path/{shared/{app,web},source}"
   test $? -eq 0 || abort setup paths failed
   log done creating shared/source directories
@@ -207,6 +207,10 @@ setup() {
   run "mkdir $path/shared/app/logs"
   test $? -eq 0 || logs symlink not created
   log done
+  log deleting public_html folder
+  run "rm -rf $path/public_html"
+  test $? -eq 0 || public_html not deleted
+  log done
   log setup complete
 }
 
@@ -218,7 +222,6 @@ symfony() {
   local repo=`config_get repo` #get repository
   local broj=`config_get broj` #get number of releases we want to save in source folder
   local unique=$NOW #get unique name for release folder
-  local ref=$1 #get 
   log cloning $repo
   run "git clone $repo $path/source/$unique" #cloning repo to unique release folder
   test $? -eq 0 || abort failed to clone - run deploy prod restore
@@ -256,7 +259,7 @@ symfony() {
     test $? -eq 0 || abort failed to determine latest tag
   fi
   log done fetching latest tag
-
+  local ref=$(git rev-parse --short HEAD) #get latest commit HEAD  
   # reset HEAD /mislim da ovo ne treba, da sacuva shared symlinkove
   #log resetting HEAD to $ref
   #run "cd $path/source && git reset --hard $ref"
@@ -284,7 +287,11 @@ symfony() {
   log creating deploy symlinks
   run "ln -sfn $path/source/$unique $path/current" #symlink unique release folder name to current
   test $? -eq 0 || abort symlink failed
-  log done creating current symlink
+  log done creating current symlink #nakon ovoga ide rm -rf public_html i symlink
+  log deleting public_html folder
+  run "rm -rf $path/public_html"
+  test $? -eq 0 || public_html not deleted
+  log done
   log creating public_html symlink
   run "ln -sfn $path/current/web $path/public_html" #symlink current/web folder to public_html
   test $? -eq 0 || abort public_html symlink failed
@@ -328,7 +335,7 @@ wordpress() {
     test $? -eq 0 || abort failed to determine latest tag
   fi
   log done fetching latest tag
-
+  local ref=$(git rev-parse --short HEAD) #get latest commit HEAD 
   # reset HEAD /mislim da ovo ne treba, da sacuva shared symlinkove
   #log resetting HEAD to $ref
   #run "cd $path/source && git reset --hard $ref"
