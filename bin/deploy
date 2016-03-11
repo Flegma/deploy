@@ -9,7 +9,8 @@
 
 NOW=$(date +"%d-%m-%Y-%H-%M-%S")
 NUMBER=$(ls -l | grep ^d | wc -l)
-VERSION="0.6.2"
+VERSION="0.6.1"
+HOME="$HOME/"
 CONFIG=./deploy.conf
 LOG=/tmp/deploy.log
 TEST=1
@@ -115,7 +116,7 @@ version() {
 
 ssh_command() {
   local url="`config_get user`@`config_get host`"
-  local key="`config_get key`"
+  local key=$HOME"`config_get key`"
   local forward_agent="`config_get forward-agent`"
   local port="`config_get port`"
   local needs_tty="`config_get needs_tty`"
@@ -207,6 +208,10 @@ setup() {
   run "mkdir $path/shared/app/logs"
   test $? -eq 0 || logs symlink not created
   log done
+  log making shared app/config folder in $path
+  run "mkdir $path/shared/app/config"
+  test $? -eq 0 || config symlink not created
+  log done
   log deleting public_html folder
   run "rm -rf $path/public_html"
   test $? -eq 0 || public_html not deleted
@@ -225,9 +230,14 @@ symfony() {
   log cloning $repo
   run "git clone $repo $path/source/$unique" #cloning repo to unique release folder
   test $? -eq 0 || abort failed to clone - run deploy prod restore
+  log symlinking parameters.yml file to shared
+  run "ln -sfn $path/shared/app/config/parameters.yml $path/source/$unique/app/config/parameters.yml" #make symlink to shared folder
+  test $? -eq 0 || .htaccess symlink not created
+  log done
   log downloading composer.phar
   run "cd $path/source/$unique && curl -sS https://getcomposer.org/installer | php && php composer.phar install" #download composer.phar to unique release folder
   test $? -eq 0 || abort composer not downloaded
+  log done
   log symlinking web/media folder to shared
   run "rm -rf $path/source/$unique/web/media" #remove symlink if exists, which it shouldnt
   run "ln -sfn $path/shared/web/media $path/source/$unique/web/media" #make symlink to shared folder
@@ -236,7 +246,7 @@ symfony() {
   log symlinking .htaccess folder to shared
   run "ln -sfn $path/shared/web/.htaccess $path/source/$unique/web/.htaccess" #make symlink to shared folder
   test $? -eq 0 || .htaccess symlink not created
-  log done
+  log done  
   log symlinking logs folder to shared
   run "rm -rf $path/source/$unique/app/logs" #remove symlink if exists, which it shouldnt
   run "ln -sfn $path/shared/app/logs $path/source/$unique/app/logs" #make symlink to shared folder
@@ -531,9 +541,9 @@ check_for_local_changes() {
 #
 
 update() {
-  log "updating deploy(1)"
+  log "updating deploy script"
   rm -fr /tmp/deploy
-  git clone git://github.com/visionmedia/deploy.git \
+  git clone git@github.com:Flegma/deploy.git \
     --depth 0 \
     /tmp/deploy \
     &> /tmp/deploy.log \
