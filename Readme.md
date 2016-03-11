@@ -5,6 +5,8 @@
 
 ## Installation
 
+    $ git clone https://github.com/Flegma/deploy.git
+    $ cd deploy
     $ make install
 
   Visit the [wiki](https://github.com/visionmedia/deploy/wiki) for additional usage information.
