@@ -9,7 +9,7 @@
 
 NOW=$(date +"%d-%m-%Y-%H-%M-%S")
 NUMBER=$(ls -l | grep ^d | wc -l)
-VERSION="1.0.4"
+VERSION="1.0.5"
 HOME="$HOME/"
 CONFIG=./deploy.conf
 LOG=/tmp/deploy.log
@@ -225,7 +225,7 @@ setup() {
 symfony() {
   local path=`config_get path` #get deploy path
   local repo=`config_get repo` #get repository
-  local branch=`config_get ref` #get number of releases we want to save in source folder
+  local branch=`config_get ref` #get branch name
   local broj=`config_get broj` #get number of releases we want to save in source folder
   local unique=$NOW #get unique name for release folder
   log cloning $repo
@@ -325,11 +325,12 @@ symfony() {
 wordpress() {
   local path=`config_get path` #get deploy path
   local repo=`config_get repo` #get repository
+  local branch=`config_get ref` #get branch name
   local broj=`config_get broj` #get number of releases we want to save in source folder
   local unique=$NOW #get unique name for release folder
   local ref=$1 #get 
   log cloning $repo
-  run "git clone $repo $path/source/$unique" #cloning repo to unique release folder
+  run "git clone $repo -b $branch $path/source/$unique" #cloning repo to unique release folder
   test $? -eq 0 || abort failed to clone - run deploy prod restore
   log done
   log deploying
