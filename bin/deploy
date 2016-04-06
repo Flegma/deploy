@@ -9,7 +9,7 @@
 
 NOW=$(date +"%d-%m-%Y-%H-%M-%S")
 NUMBER=$(ls -l | grep ^d | wc -l)
-VERSION="1.0.3"
+VERSION="1.0.4"
 HOME="$HOME/"
 CONFIG=./deploy.conf
 LOG=/tmp/deploy.log
@@ -231,6 +231,9 @@ symfony() {
   log cloning $repo
   run "git clone $repo -b $branch $path/source/$unique" #cloning repo to unique release folder
   test $? -eq 0 || abort failed to clone - run deploy prod restore
+  log removing parameters.yml symlink
+  run "rm -f $path/shared/app/config/parameters.yml"
+  test $? -eq 0 || parameters.yml symlink not removed
   log symlinking parameters.yml file to shared
   run "ln -sfn $path/shared/app/config/parameters.yml $path/source/$unique/app/config/parameters.yml" #make symlink to shared folder
   test $? -eq 0 || .htaccess symlink not created
