@@ -9,7 +9,7 @@
 
 NOW=$(date +"%d-%m-%Y-%H-%M-%S")
 NUMBER=$(ls -l | grep ^d | wc -l)
-VERSION="1.0.5"
+VERSION="1.0.6"
 HOME="$HOME/"
 CONFIG=./deploy.conf
 LOG=/tmp/deploy.log
@@ -256,6 +256,10 @@ symfony() {
   run "ln -sfn $path/shared/app/logs $path/source/$unique/app/logs" #make symlink to shared folder
   test $? -eq 0 || logs symlink not created
   log done
+  log change hook permissions
+  run "chmod -R 755 $path/source/$unique" #changing permissions so that hook scripts can run
+  test $? -eq 0 || abort failed to change permissions
+  log done
   log deploying
   hook pre-deploy || abort pre-deploy hook failed
   log done running pre-deploy scripts
@@ -332,6 +336,10 @@ wordpress() {
   log cloning $repo
   run "git clone $repo -b $branch $path/source/$unique" #cloning repo to unique release folder
   test $? -eq 0 || abort failed to clone - run deploy prod restore
+  log done
+  log change hook permissions
+  run "chmod -R 755 $path/source/$unique" #changing permissions so that hook scripts can run
+  test $? -eq 0 || abort failed to change permissions
   log done
   log deploying
   hook pre-deploy || abort pre-deploy hook failed
