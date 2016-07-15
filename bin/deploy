@@ -9,7 +9,7 @@
 
 NOW=$(date +"%d-%m-%Y-%H-%M-%S")
 NUMBER=$(ls -l | grep ^d | wc -l)
-VERSION="1.0.9"
+VERSION="1.0.10"
 HOME="$HOME/"
 CONFIG=./deploy.conf
 LOG=/tmp/deploy.log
@@ -307,10 +307,10 @@ symfony() {
     log ignoring tests
   fi
   log done running mid-deploy scripts
-  log removing app_dev.php
-  run "rm -rf $path/source/$unique/web/app_dev.php" #remove app_dev.php file on deploy
-  test $? -eq 0 || abort app_dev removal failed
-  log done removing app_dev.php
+  log removing app_*.php files
+  run "rm -rf $path/source/$unique/web/app_*.php" #remove app_dev.php file on deploy
+  test $? -eq 0 || abort app_*.php removal failed
+  log done removing app_*.php files
   log creating deploy symlinks
   run "ln -sfn $path/source/$unique $path/current" #symlink unique release folder name to current
   test $? -eq 0 || abort symlink failed
