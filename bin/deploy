@@ -9,7 +9,7 @@
 
 NOW=$(date +"%d-%m-%Y-%H-%M-%S")
 NUMBER=$(ls -l | grep ^d | wc -l)
-VERSION="1.0.7"
+VERSION="1.0.8"
 HOME="$HOME/"
 CONFIG=./deploy.conf
 LOG=/tmp/deploy.log
@@ -204,6 +204,10 @@ setup() {
   run "touch $path/shared/web/.htaccess"
   test $? -eq 0 || .htaccess symlink not created
   log done
+  #log making shared parameters.yml file in $path
+  #run "touch $path/shared/app/config/parameters.yml"
+  #test $? -eq 0 || parameters.yml symlink not created
+  #log done
   log making shared app/logs folder in $path
   run "mkdir $path/shared/app/logs"
   test $? -eq 0 || logs symlink not created
@@ -232,16 +236,16 @@ symfony() {
   log cloning $repo
   run "git clone $repo -b $branch $path/source/$unique" #cloning repo to unique release folder
   test $? -eq 0 || abort failed to clone - run deploy prod restore
-  log removing parameters.yml symlink
-  run "rm -f $path/shared/app/config/parameters.yml"
-  test $? -eq 0 || parameters.yml symlink not removed
+  #log removing parameters.yml symlink
+  #run "rm -f $path/shared/app/config/parameters.yml"
+  #test $? -eq 0 || parameters.yml symlink not removed
   log symlinking parameters.yml file to shared
   run "ln -sfn $path/shared/app/config/parameters.yml $path/source/$unique/app/config/parameters.yml" #make symlink to shared folder
   test $? -eq 0 || .htaccess symlink not created
   log done
   log downloading composer.phar
   run "cd $path/source/$unique && curl -sS https://getcomposer.org/installer | php && php composer.phar $action" #download composer.phar to unique release folder
-  test $? -eq 0 || abort composer not downloaded
+  test $? -eq 0 || abort composer not downloaded or composer $action not executed
   log done
   log symlinking web/media folder to shared
   run "rm -rf $path/source/$unique/web/media" #remove symlink if exists, which it shouldnt
@@ -384,9 +388,15 @@ wordpress() {
     log ignoring tests
   fi
   log done running mid-deploy scripts
-  log creating deploy symlinks
+  log creating deploy unique folder symlink to current
   run "ln -sfn $path/source/$unique $path/current" #symlink unique release folder name to current
   test $? -eq 0 || abort symlink failed
+  
+  #log creating symlink to shared uploads and plugin folders
+  #run "ln -sfn $path/shared/web/wp-content/uploads $path/source/$unique/wp-content" #symlink unique release folder to shared uploads
+  #run "ln -sfn $path/shared/web/wp-content/plugins $path/source/$unique/wp-content" #symlink unique release folder to shared uploads
+  #test $? -eq 0 || abort symlink failed
+
   log done creating current symlink
   log creating public_html symlink
   run "ln -sfn $path/current $path/public_html" #symlink current/web folder to public_html
