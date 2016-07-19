@@ -7,9 +7,26 @@
 # https://github.com/visionmedia/deploy
 #
 
+#[prod]
+#forward-agent yes
+#key serverkey.pem
+#needs_tty yes
+#user root
+#host hostname(ip)
+#port 1338
+#repo git@bitbucket.org:...
+#path /home/m1dev
+#ref master
+#broj 3
+#pre-deploy ./0pre.sh
+#mid-deploy ./1mid.sh
+#post-deploy ./2post.sh
+#prije svega triba ssh -A USERNAME@domena.com ssh git@bitbucket.org, mozda pre-deploy napravit gori
+
+
 NOW=$(date +"%d-%m-%Y-%H-%M-%S")
 NUMBER=$(ls -l | grep ^d | wc -l)
-VERSION="1.0.10"
+VERSION="1.0.11"
 HOME="$HOME/"
 CONFIG=./deploy.conf
 LOG=/tmp/deploy.log
@@ -620,4 +637,3 @@ check_for_local_changes
 
 # deploy
 deploy "${REF:-`config_get ref`}"
-
