@@ -9,7 +9,75 @@
     $ cd deploy
     $ make install
 
-  Visit the [wiki](https://github.com/visionmedia/deploy/wiki) for additional usage information.
+## Deploy parameters examples
+
+### Parameters explanation:
+
+      [prod]  -> This can be anything. It identifies the environment you're deploying to.
+      forward-agent -> We want to forward our SSH agent so we can connect to the repository.
+      needs_tty -> This is interactive terminal or teletypewritter. This is useful if we need to enter stuff into terminal while deploying (parameteres, etc.)
+      user -> Username of the account we are deploying to.
+      host -> IP address or the FQDN that points to the server we are deploying to.
+      port -> SSH port. 
+      repo -> Bitbucket/Gitlab or any other repository
+      path -> Path to which we are deploying. Usually /home/username. For theme only deploy we use wp-content folder without the trailing slash /.
+      ref -> Branch which we want to deploy. 
+      broj -> Number of the releases we want to save before deleting them. 
+      pre-deploy -> Pre deploy script. Comment it out with # if not needed.
+      mid-deploy -> Deploy script that runs before the folder is actually symlinked to the main folder. Comment it out with # if not needed.
+      post-deploy -> Post deploy script that runs after the deploy is finished. We can change permissions to folders in this script, etc. Comment it out with # if not needed.
+
+### For Symfony use this example:
+
+      [prod]
+      forward-agent yes
+      needs_tty yes
+      user username
+      host myserver.com
+      port 22
+      repo git@bitbucket.org:name/repo-name.git
+      path /home/username
+      ref master
+      broj 3
+      pre-deploy ./0pre.sh
+      mid-deploy ./1mid.sh
+      post-deploy ./2post.sh
+      
+
+### For Wordpress use this example:
+
+      [prod]
+      forward-agent yes
+      needs_tty yes
+      user username
+      host myserver.com
+      port 22
+      repo git@bitbucket.org:name/repo-name.git
+      path /home/username
+      ref master
+      broj 3
+      pre-deploy ./0pre.sh
+      mid-deploy ./1mid.sh
+      post-deploy ./2post.sh
+
+
+### For Wordpress Theme use this example:
+
+      [prod]
+      forward-agent yes
+      needs_tty yes
+      user username
+      host myserver.com
+      port 22
+      repo git@bitbucket.org:name/repo-name.git
+      path /home/username/public_html/wp-content
+      ref master
+      broj 5
+      pre-deploy ./0pre.sh
+      mid-deploy ./1mid.sh
+      post-deploy ./2post.sh
+
+
 
 ## Usage
 
@@ -40,6 +108,10 @@
     list                 list previous deploy commits
     [ref]                deploy to [ref], the 'ref' setting, or latest tag
 
+
+  Visit the [wiki](https://github.com/visionmedia/deploy/wiki) for additional usage information.
+
+  
 ## Configuration
 
  By default `deploy(1)` will look for _./deploy.conf_, consisting of one or more environments, `[stage]`, `[production]`, etc, followed by directives.
