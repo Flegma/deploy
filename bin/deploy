@@ -9,7 +9,7 @@
 
 NOW=$(date +"%d-%m-%Y-%H-%M-%S")
 NUMBER=$(ls -l | grep ^d | wc -l)
-VERSION="1.0.14"
+VERSION="1.0.15"
 HOME="$HOME/"
 CONFIG=./deploy.conf
 LOG=/tmp/deploy.log
@@ -224,20 +224,6 @@ setup() {
 }
 
 #
-# Run wordpress template folders setup.
-#
-
-#themesetup() {
-#  local path=`config_get path`
-#  local template=`config_get template`
-#  log running setup - creating template directories
-#  run "mkdir -p $path/$template"
-#  test $? -eq 0 || abort setup template dirs failed
-#  log done creating template directories
-#  log setup complete
-#}
-
-#
 # Deploy Symfony.
 #
 symfony() {
@@ -432,7 +418,7 @@ wordpress() {
 # Deploy Wordpress Template
 #
 
-themewordpress() {
+themewp() {
   local path=`config_get path` #get deploy path
   local repo=`config_get repo` #get repository
   local branch=`config_get ref` #get branch name
@@ -491,7 +477,7 @@ themewordpress() {
   fi
   log done running mid-deploy scripts
   log creating deploy unique folder symlink to current
-  run "ln -sfn $path/$template-$unique-source $path/$template" #symlink unique release folder name to current
+  run "ln -sfn $path/$template-$unique-source $path/themes/$template" #symlink unique release folder name to current
   test $? -eq 0 || abort symlink failed
   
   #log creating symlink to shared uploads and plugin folders
@@ -712,10 +698,9 @@ while test $# -ne 0; do
     prev|previous) require_env; nth_deploy_commit 2; exit ;;
     revert) require_env; revert_to ${1-1}; exit ;;
     setup) require_env; setup $@; exit ;;
-    #themesetup) require_env; themesetup $@; exit ;;
     symfony) require_env; symfony $@; exit ;;
     wordpress) require_env; wordpress $@; exit ;;
-    themewordpress) require_env; themewordpress $@; exit ;;
+    themewp) require_env; themewp $@; exit ;;
     restore) require_env; restore $@; exit ;;
     themerestore) require_env; themerestore $@; exit ;;
     list) require_env; list_deploys; exit ;;
