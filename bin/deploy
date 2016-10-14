@@ -7,26 +7,9 @@
 # https://github.com/visionmedia/deploy
 #
 
-#[prod]
-#forward-agent yes
-#key serverkey.pem
-#needs_tty yes
-#user root
-#host hostname(ip)
-#port 1338
-#repo git@bitbucket.org:...
-#path /home/m1dev
-#ref master
-#broj 3
-#pre-deploy ./0pre.sh
-#mid-deploy ./1mid.sh
-#post-deploy ./2post.sh
-#prije svega triba ssh -A USERNAME@domena.com ssh git@bitbucket.org, mozda pre-deploy napravit gori
-
-
 NOW=$(date +"%d-%m-%Y-%H-%M-%S")
 NUMBER=$(ls -l | grep ^d | wc -l)
-VERSION="1.0.13"
+VERSION="1.0.14"
 HOME="$HOME/"
 CONFIG=./deploy.conf
 LOG=/tmp/deploy.log
@@ -160,7 +143,7 @@ run() {
 #
 
 console() {
-  local path="`config_get path`/current"
+  local path="`config_get path`"
   local shell="`ssh_command`"
   echo $shell
   exec $shell -t "cd $path; \$SHELL --login"
@@ -241,7 +224,21 @@ setup() {
 }
 
 #
-# Setup Symfony.
+# Run wordpress template folders setup.
+#
+
+#themesetup() {
+#  local path=`config_get path`
+#  local template=`config_get template`
+#  log running setup - creating template directories
+#  run "mkdir -p $path/$template"
+#  test $? -eq 0 || abort setup template dirs failed
+#  log done creating template directories
+#  log setup complete
+#}
+
+#
+# Deploy Symfony.
 #
 symfony() {
   local path=`config_get path` #get deploy path
@@ -349,7 +346,7 @@ symfony() {
 }
 
 #
-# Setup Wordpress.
+# Deploy Wordpress.
 #
 
 wordpress() {
@@ -432,6 +429,90 @@ wordpress() {
 }
 
 #
+# Deploy Wordpress Template
+#
+
+themewordpress() {
+  local path=`config_get path` #get deploy path
+  local repo=`config_get repo` #get repository
+  local branch=`config_get ref` #get branch name
+  local template=`config_get template` #get branch name
+  local broj=`config_get broj` #get number of releases we want to save in source folder
+  local unique=$NOW #get unique name for release folder
+  local ref=$1 #get 
+  log cloning $repo
+  run "git clone $repo -b $branch $path/$template-$unique-source" #cloning repo to unique release folder
+  test $? -eq 0 || abort failed to clone - run deploy prod restore
+  log done
+  log change hook permissions
+  run "chmod -R 755 $path/$template-$unique-source" #changing permissions so that hook scripts can run
+  test $? -eq 0 || abort failed to change permissions
+  log done
+  log deploying
+  hook pre-deploy || abort pre-deploy hook failed
+  log done running pre-deploy scripts
+  log fetching updates
+  run "cd $path/$template-$unique-source && git fetch --all" #fetch repo into unique release folder
+  test $? -eq 0 || abort fetch failed
+  log done fetching updates
+   #fetch latest tag
+  if test -z "$ref"; then
+    log fetching latest tag
+    ref=`run "cd $path/$template-$unique-source && git for-each-ref refs/tags \
+      --sort=-*authordate \
+      --format='%(refname)' \
+      --count=1 | cut -d '/' -f 3"`
+    test $? -eq 0 || abort failed to determine latest tag
+  fi
+  log done fetching latest tag
+  local ref=$(git rev-parse --short HEAD) #get latest commit HEAD 
+  # reset HEAD /mislim da ovo ne treba, da sacuva shared symlinkove
+  #log resetting HEAD to $ref
+  #run "cd $path/source && git reset --hard $ref"
+  #test $? -eq 0 || abort git reset failed
+
+  #log deploys to .deploys file so we can now what has been deployed
+  run "cd $path/$template-$unique-source && \
+      echo \`git rev-parse --short HEAD\` \
+      >> $path/.deploys"
+  test $? -eq 0 || abort deploy log append failed
+  log done logging deploy
+  
+  hook mid-deploy || abort mid-deploy hook failed
+
+  if test $TEST -eq 1; then
+    hook test
+    if test $? -ne 0; then
+      log tests failed, reverting deploy
+      quickly_revert_to 1 && log "revert complete" && exit
+    fi
+  else
+    log ignoring tests
+  fi
+  log done running mid-deploy scripts
+  log creating deploy unique folder symlink to current
+  run "ln -sfn $path/$template-$unique-source $path/$template" #symlink unique release folder name to current
+  test $? -eq 0 || abort symlink failed
+  
+  #log creating symlink to shared uploads and plugin folders
+  #run "ln -sfn $path/shared/web/wp-content/uploads $path/source/$unique/wp-content" #symlink unique release folder to shared uploads
+  #run "ln -sfn $path/shared/web/wp-content/plugins $path/source/$unique/wp-content" #symlink unique release folder to shared uploads
+  #test $? -eq 0 || abort symlink failed
+
+  #log done creating current symlink
+  #log creating public_html symlink
+  #run "ln -sfn $path/current $path/public_html" #symlink current/web folder to public_html
+  #test $? -eq 0 || abort public_html symlink failed
+  #log done symlinking current/web to public_html
+  log removing all but latest $broj deploys
+  run "ls -d -1tr $path/$template-* | head -n -$broj | xargs -d '\n' rm -rf" #remove all but $broj number of deploys
+  log done removing all but latest $broj deploys
+  hook post-deploy || abort post-deploy hook failed
+  log done running post-deploy scripts
+  log successfully deployed $ref
+}
+
+#
 # Reset user account to defaults.
 #
 restore() {
@@ -450,6 +531,21 @@ restore() {
   log done
   log removing .deploys file
   run "rm -f $path/.deploys"
+  log done
+  log restore complete
+}
+
+#
+# Reset user account to defaults.
+#
+themerestore() {
+  local path=`config_get path`
+  local template=`config_get template`
+  log removing template folders
+  run "rm -rf $path/$template*"
+  log done
+  log removing .deploys file
+  run "rm -rf $path/.deploys"
   log done
   log restore complete
 }
@@ -616,9 +712,12 @@ while test $# -ne 0; do
     prev|previous) require_env; nth_deploy_commit 2; exit ;;
     revert) require_env; revert_to ${1-1}; exit ;;
     setup) require_env; setup $@; exit ;;
+    #themesetup) require_env; themesetup $@; exit ;;
     symfony) require_env; symfony $@; exit ;;
     wordpress) require_env; wordpress $@; exit ;;
+    themewordpress) require_env; themewordpress $@; exit ;;
     restore) require_env; restore $@; exit ;;
+    themerestore) require_env; themerestore $@; exit ;;
     list) require_env; list_deploys; exit ;;
     update) update; exit ;;
     config) config $@; exit ;;
