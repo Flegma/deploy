@@ -9,7 +9,7 @@
 
 NOW=$(date +"%d-%m-%Y-%H-%M-%S")
 NUMBER=$(ls -l | grep ^d | wc -l)
-VERSION="1.0.15"
+VERSION="1.0.16"
 HOME="$HOME/"
 CONFIG=./deploy.conf
 LOG=/tmp/deploy.log
@@ -180,6 +180,29 @@ hook() {
     test $? -eq 0
   else
     log hook $hook
+  fi
+}
+
+#
+# Execute hook <name> relative to the path configured.
+#
+
+wpthemehook() {
+  test -n "$1" || abort hook name required
+  local wpthemehook=$1
+  local unique=$NOW #get unique name for release folder
+  local path=`config_get path`
+  local cmd=`config_get $wpthemehook`
+  local template=`config_get template` 
+  local unique=$NOW
+  if test -n "$cmd"; then
+    log "executing $wpthemehook \`$cmd\`"
+    run "cd $path/$template-$unique-source; 
+      $cmd 2>&1 | tee -a $LOG; \
+      exit \${PIPESTATUS[0]}"
+    test $? -eq 0
+  else
+    log wpthemehook $hook
   fi
 }
 
@@ -435,7 +458,7 @@ themewp() {
   test $? -eq 0 || abort failed to change permissions
   log done
   log deploying
-  hook pre-deploy || abort pre-deploy hook failed
+  wpthemehook pre-deploy || abort pre-deploy hook failed
   log done running pre-deploy scripts
   log fetching updates
   run "cd $path/$template-$unique-source && git fetch --all" #fetch repo into unique release folder
@@ -464,10 +487,10 @@ themewp() {
   test $? -eq 0 || abort deploy log append failed
   log done logging deploy
   
-  hook mid-deploy || abort mid-deploy hook failed
+  wpthemehook mid-deploy || abort mid-deploy hook failed
 
   if test $TEST -eq 1; then
-    hook test
+    wpthemehook test
     if test $? -ne 0; then
       log tests failed, reverting deploy
       quickly_revert_to 1 && log "revert complete" && exit
@@ -493,7 +516,7 @@ themewp() {
   log removing all but latest $broj deploys
   run "ls -d -1tr $path/$template-* | head -n -$broj | xargs -d '\n' rm -rf" #remove all but $broj number of deploys
   log done removing all but latest $broj deploys
-  hook post-deploy || abort post-deploy hook failed
+  wpthemehook post-deploy || abort post-deploy hook failed
   log done running post-deploy scripts
   log successfully deployed $ref
 }
