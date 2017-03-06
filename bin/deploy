@@ -9,7 +9,7 @@
 
 NOW=$(date +"%d-%m-%Y-%H-%M-%S")
 NUMBER=$(ls -l | grep ^d | wc -l)
-VERSION="1.0.18"
+VERSION="1.0.19"
 HOME="$HOME/"
 CONFIG=./deploy.conf
 LOG=/tmp/deploy.log
@@ -253,6 +253,7 @@ symfony() {
   local path=`config_get path` #get deploy path
   local repo=`config_get repo` #get repository
   local branch=`config_get ref` #get branch name
+  local php_path=`config_get php_path` #get branch name
   local action=`config_get comp` #get composer action (install or update)
   local broj=`config_get broj` #get number of releases we want to save in source folder
   local unique=$NOW #get unique name for release folder
@@ -267,7 +268,7 @@ symfony() {
   test $? -eq 0 || .htaccess symlink not created
   log done
   log downloading composer.phar
-  run "cd $path/source/$unique && curl -sS https://getcomposer.org/installer | php && php composer.phar $action" #download composer.phar to unique release folder
+  run "cd $path/source/$unique && curl -sS https://getcomposer.org/installer | php && $php_path composer.phar $action" #download composer.phar to unique release folder
   test $? -eq 0 || abort composer not downloaded or composer $action not executed
   log done
   log symlinking web/media folder to shared
