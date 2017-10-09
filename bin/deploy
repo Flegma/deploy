@@ -253,7 +253,7 @@ symfony() {
   local path=`config_get path` #get deploy path
   local repo=`config_get repo` #get repository
   local branch=`config_get ref` #get branch name
-  local php_path=`config_get php_path` #get branch name
+  local php_path=`config_get php_path` #get php path to use
   local action=`config_get comp` #get composer action (install or update)
   local broj=`config_get broj` #get number of releases we want to save in source folder
   local unique=$NOW #get unique name for release folder
@@ -484,6 +484,89 @@ presta() {
   log creating deploy unique folder symlink to current
   run "ln -sfn $path/source/$unique $path/current" #symlink unique release folder name to current
   test $? -eq 0 || abort symlink failed
+  log done creating current symlink
+  log creating public_html symlink
+  run "ln -sfn $path/current $path/public_html" #symlink current/web folder to public_html
+  test $? -eq 0 || abort public_html symlink failed
+  log done symlinking current/web to public_html
+  log removing all but latest $broj deploys
+  run "ls -d -1tr $path/source/* | head -n -$broj | xargs -d '\n' rm -rf" #remove all but $broj number of deploys
+  log done removing all but latest $broj deploys
+  hook post-deploy || abort post-deploy hook failed
+  log done running post-deploy scripts
+  log successfully deployed $ref
+}
+
+#
+# Deploy node.
+#
+
+node() {
+  local path=`config_get path` #get deploy path
+  local repo=`config_get repo` #get repository
+  local branch=`config_get ref` #get branch name
+  local broj=`config_get broj` #get number of releases we want to save in source folder
+  local unique=$NOW #get unique name for release folder
+  local ref=$1 #get 
+  log cloning $repo
+  run "git clone $repo -b $branch $path/source/$unique" #cloning repo to unique release folder
+  test $? -eq 0 || abort failed to clone - run deploy prod restore
+  log done
+  log change hook permissions
+  run "chmod -R 755 $path/source/$unique" #changing permissions so that hook scripts can run
+  test $? -eq 0 || abort failed to change permissions
+  log done
+  log deploying
+  hook pre-deploy || abort pre-deploy hook failed
+  log done running pre-deploy scripts
+  log fetching updates
+  run "cd $path/source/$unique && git fetch --all" #fetch repo into unique release folder
+  test $? -eq 0 || abort fetch failed
+  log done fetching updates
+  # fetch latest tag
+  if test -z "$ref"; then
+    log fetching latest tag
+    ref=`run "cd $path/source/$unique && git for-each-ref refs/tags \
+      --sort=-*authordate \
+      --format='%(refname)' \
+      --count=1 | cut -d '/' -f 3"`
+    test $? -eq 0 || abort failed to determine latest tag
+  fi
+  log done fetching latest tag
+  local ref=$(git rev-parse --short HEAD) #get latest commit HEAD 
+  # reset HEAD /mislim da ovo ne treba, da sacuva shared symlinkove
+  #log resetting HEAD to $ref
+  #run "cd $path/source && git reset --hard $ref"
+  #test $? -eq 0 || abort git reset failed
+
+  #log deploys to .deploys file so we can now what has been deployed
+  run "cd $path/source/$unique && \
+      echo \`git rev-parse --short HEAD\` \
+      >> $path/.deploys"
+  test $? -eq 0 || abort deploy log append failed
+  log done logging deploy
+  
+  hook mid-deploy || abort mid-deploy hook failed
+
+  if test $TEST -eq 1; then
+    hook test
+    if test $? -ne 0; then
+      log tests failed, reverting deploy
+      quickly_revert_to 1 && log "revert complete" && exit
+    fi
+  else
+    log ignoring tests
+  fi
+  log done running mid-deploy scripts
+  log creating deploy unique folder symlink to current
+  run "ln -sfn $path/source/$unique $path/current" #symlink unique release folder name to current
+  test $? -eq 0 || abort symlink failed
+  
+  #log creating symlink to shared uploads and plugin folders
+  #run "ln -sfn $path/shared/web/wp-content/uploads $path/source/$unique/wp-content" #symlink unique release folder to shared uploads
+  #run "ln -sfn $path/shared/web/wp-content/plugins $path/source/$unique/wp-content" #symlink unique release folder to shared uploads
+  #test $? -eq 0 || abort symlink failed
+
   log done creating current symlink
   log creating public_html symlink
   run "ln -sfn $path/current $path/public_html" #symlink current/web folder to public_html
@@ -868,6 +951,7 @@ while test $# -ne 0; do
     symfony) require_env; symfony $@; exit ;;
     drupal) require_env; drupal $@; exit ;;
     presta) require_env; presta $@; exit ;;
+    node) require_env; node $@; exit ;;
     wordpress) require_env; wordpress $@; exit ;;
     themewp) require_env; themewp $@; exit ;;
     restore) require_env; restore $@; exit ;;
