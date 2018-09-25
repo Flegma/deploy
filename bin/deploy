@@ -9,7 +9,7 @@
 
 NOW=$(date +"%d-%m-%Y-%H-%M-%S")
 NUMBER=$(ls -l | grep ^d | wc -l)
-VERSION="1.0.22"
+VERSION="1.0.23"
 HOME="$HOME/"
 CONFIG=./deploy.conf
 LOG=/tmp/deploy.log
@@ -351,6 +351,9 @@ symfony() {
   run "rm -rf $path/public_html && ln -sfn $path/current/web $path/public_html" #symlink current/web folder to public_html
   test $? -eq 0 || abort public_html symlink failed
   log done symlinking current/web to public_html
+  log creating var/logs symlink
+  run "rm -rf $path/source/$unique/var/logs && ln -sfn $path/shared/var/logs/ $path/source/$unique/var/logs" #symlink current/web folder to public_html
+  test $? -eq 0 || abort var/logs symlink failed
   log removing all but latest $broj deploys
   run "ls -d -1tr $path/source/* | head -n -$broj | xargs -d '\n' rm -rf" #remove all but $broj number of deploys
   log done removing all but latest $broj deploys
@@ -380,6 +383,10 @@ symfony4() {
   #run "ln -sfn $path/shared/app/config/parameters.yml $path/source/$unique/app/config/parameters.yml" #make symlink to shared folder
   #test $? -eq 0 || .htaccess symlink not created
   #log done
+  log symlinking parameters.yml file to shared
+  run "ln -sfn $path/shared/app/config/parameters.yml $path/source/$unique/app/config/parameters.yml" #make symlink to shared folder
+  test $? -eq 0 || parameters.yml symlink not created
+  log done
   log creating translations directory
   run "mkdir $path/source/$unique/translations"
   test $? -eq 0 || abort translations directory not created
@@ -467,7 +474,11 @@ symfony4() {
   log creating public_html symlink
   run "rm -rf $path/public_html && ln -sfn $path/current/public $path/public_html" #symlink current/web folder to public_html
   test $? -eq 0 || abort public_html symlink failed
-  log done symlinking current/web to public_html
+  log done symlinking current/public to public_html
+  log creating var/logs symlink
+  run "rm -rf $path/source/$unique/var/logs && ln -sfn $path/shared/var/logs/ $path/source/$unique/var/logs" #symlink var/logs folder to current/var/logs
+  test $? -eq 0 || abort var/logs symlink failed
+  log done symlinking current/public to public_html
   log removing all but latest $broj deploys
   run "ls -d -1tr $path/source/* | head -n -$broj | xargs -d '\n' rm -rf" #remove all but $broj number of deploys
   log done removing all but latest $broj deploys
