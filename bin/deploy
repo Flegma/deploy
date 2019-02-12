@@ -352,7 +352,7 @@ symfony2() {
   run "rm -rf $path/public_html && ln -sfn $path/current/web $path/public_html" #symlink current/web folder to public_html
   test $? -eq 0 || abort public_html symlink failed
   log done symlinking current/web to public_html
-  #only in symfony4
+  #only in symfony3 and 4
   #log creating var/logs symlink
   #run "rm -rf $path/source/$unique/var/logs && ln -sfn $path/shared/var/logs/ $path/source/$unique/var/logs" #symlink current/web folder to public_html
   #test $? -eq 0 || abort var/logs symlink failed
@@ -1195,8 +1195,8 @@ while test $# -ne 0; do
     prev|previous) require_env; nth_deploy_commit 2; exit ;;
     revert) require_env; revert_to ${1-1}; exit ;;
     setup) require_env; setup $@; exit ;;
-    symfony2) require_env; symfony $@; exit ;;
-    symfony3) require_env; symfony $@; exit ;;
+    symfony2) require_env; symfony2 $@; exit ;;
+    symfony3) require_env; symfony3 $@; exit ;;
     symfony4) require_env; symfony4 $@; exit ;;
     drupal) require_env; drupal $@; exit ;;
     presta) require_env; presta $@; exit ;;
