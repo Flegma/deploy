@@ -9,7 +9,7 @@
 
 NOW=$(date +"%d-%m-%Y-%H-%M-%S")
 NUMBER=$(ls -l | grep ^d | wc -l)
-VERSION="1.1.1"
+VERSION="1.1.2"
 HOME="$HOME/"
 CONFIG=./deploy.conf
 LOG=/tmp/deploy.log
@@ -501,14 +501,14 @@ symfony4() {
   run "ln -sfn $path/shared/.env $path/source/$unique/.env" #make symlink to shared .env file
   test $? -eq 0 || .env symlink not created
   log done
-  log creating translations directory
-  run "mkdir $path/source/$unique/translations"
-  test $? -eq 0 || abort translations directory not created
-  log done
-  log creating templates directory
-  run "mkdir $path/source/$unique/templates"
-  test $? -eq 0 || abort templates directory not created
-  log done
+  #log creating translations directory
+  #run "mkdir $path/source/$unique/translations"
+  #test $? -eq 0 || abort translations directory not created
+  #log done
+  #log creating templates directory
+  #run "mkdir $path/source/$unique/templates"
+  #test $? -eq 0 || abort templates directory not created
+  #log done
   log downloading composer.phar
   run "cd $path/source/$unique && curl -sS https://getcomposer.org/installer | php && $php_path composer.phar $action" #download composer.phar to unique release folder
   test $? -eq 0 || abort composer not downloaded or composer $action not executed
