@@ -9,7 +9,7 @@
 
 NOW=$(date +"%d-%m-%Y-%H-%M-%S")
 NUMBER=$(ls -l | grep ^d | wc -l)
-VERSION="1.1.0"
+VERSION="1.1.1"
 HOME="$HOME/"
 CONFIG=./deploy.conf
 LOG=/tmp/deploy.log
@@ -497,9 +497,9 @@ symfony4() {
   #run "ln -sfn $path/shared/app/config/parameters.yml $path/source/$unique/app/config/parameters.yml" #make symlink to shared folder
   #test $? -eq 0 || .htaccess symlink not created
   #log done
-  log symlinking parameters.yml file to shared
-  run "ln -sfn $path/shared/app/config/parameters.yml $path/source/$unique/app/config/parameters.yml" #make symlink to shared folder
-  test $? -eq 0 || parameters.yml symlink not created
+  log symlinking .env file to shared
+  run "ln -sfn $path/shared/.env $path/source/$unique/.env" #make symlink to shared .env file
+  test $? -eq 0 || .env symlink not created
   log done
   log creating translations directory
   run "mkdir $path/source/$unique/translations"
